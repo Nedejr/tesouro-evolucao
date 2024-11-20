@@ -2,10 +2,14 @@ import streamlit as st
 import pandas as pd
 import math
 from pathlib import Path
+from pymongo import MongoClient
+from dotenv import load_dotenv
+
+import os
 
 # Set the title and favicon that appear in the Browser's tab bar.
 st.set_page_config(
-    page_title='GDP dashboard',
+    page_title='Evolução Carteira do Tesouro Dashboard',
     page_icon=':earth_americas:', # This is an emoji shortcode. Could be a URL too.
 )
 
@@ -13,6 +17,37 @@ st.set_page_config(
 # Declare some useful functions.
 
 @st.cache_data
+def lista_tesouro_totais():
+    load_dotenv()
+    cliente = MongoClient(f"mongodb+srv://{os.getenv('MONGO_DATABASE')}:{os.getenv('MONGO_PASSW')}@clustercontroleweb.dfrs4.mongodb.net/?retryWrites=true&w=majority&appName=ClusterControleWeb")
+    database = cliente['db_controleweb']
+    collection = database['Tesouro']
+    
+    df = pd.DataFrame(list(collection.find()))
+    df = df.sort_values(by='Data')
+    df_agrupado_dia = df.groupby('Data')['Posição Atual'].sum().reset_index()
+    df_agrupado_dia['Lucro'] = df_agrupado_dia['Posição Atual'].diff().round(2).astype(str)
+    df_agrupado_dia['Data'] = pd.to_datetime(df_agrupado_dia['Data'])
+    df_agrupado_dia['Data'] = df_agrupado_dia['Data'].dt.strftime('%d/%m/%Y')
+
+
+    lista = df['Titulo'].unique().tolist()
+    df_total = pd.DataFrame()
+
+    for ativo in lista:
+
+        df1 = df.loc[df['Titulo']==ativo]
+        df1.loc[:,['Lucro']] = df1['Posição Atual'].diff()
+        #df1.loc[:,['Dif']] = df1['Unit'].diff()
+        #df1.loc[:,['Rent%']] = df1['Unit'].pct_change() * 100
+        #fig_tesouro = px.line(df1, x='Data', y='Lucro', color= 'Titulo',title='Tesouro no Período ' + ativo)
+        #fig_tesouro.show()
+        df_total = pd.concat([df_total, df1], axis=0)
+        df1 = df1.loc[:,['Titulo','Lucro']].style.hide()
+        #display(df1)
+        
+    return df_total
+    
 def get_gdp_data():
     """Grab GDP data from a CSV file.
 
@@ -23,34 +58,29 @@ def get_gdp_data():
 
     # Instead of a CSV on disk, you could read from an HTTP endpoint here too.
     DATA_FILENAME = Path(__file__).parent/'data/gdp_data.csv'
-    raw_gdp_df = pd.read_csv(DATA_FILENAME)
+    print(DATA_FILENAME)
+    df = pd.read_csv(DATA_FILENAME)
 
     MIN_YEAR = 1960
     MAX_YEAR = 2022
 
     # The data above has columns like:
-    # - Country Name
-    # - Country Code
-    # - [Stuff I don't care about]
-    # - GDP for 1960
-    # - GDP for 1961
-    # - GDP for 1962
-    # - ...
-    # - GDP for 2022
-    #
-    # ...but I want this instead:
-    # - Country Name
-    # - Country Code
-    # - Year
-    # - GDP
-    #
+    #_id
+    #Titulo
+    #Qtd
+    #Posição Atual
+    #Data
+
+
     # So let's pivot all those year-columns into two: Year and GDP
-    gdp_df = raw_gdp_df.melt(
+    gdp_df = df.melt(
         ['Country Code'],
         [str(x) for x in range(MIN_YEAR, MAX_YEAR + 1)],
         'Year',
         'GDP',
     )
+    print(df)
+    print(gdp_df)
 
     # Convert years from string to integers
     gdp_df['Year'] = pd.to_numeric(gdp_df['Year'])
@@ -64,22 +94,26 @@ gdp_df = get_gdp_data()
 
 # Set the title that appears at the top of the page.
 '''
-# :earth_americas: GDP dashboard
-
-Browse GDP data from the [World Bank Open Data](https://data.worldbank.org/) website. As you'll
-notice, the data only goes to 2022 right now, and datapoints for certain years are often missing.
-But it's otherwise a great (and did I mention _free_?) source of data.
+# :earth_americas: Evolução Tesouro Diário
+Evolução diária da carteira Tesouro direto desde o dia 03/10/2024 até hoje.
 '''
 
 # Add some spacing
 ''
 ''
 
+df_tesouro = lista_tesouro_totais()
+print(df_tesouro['Data'].min())
+print(df_tesouro['Data'].max())
+
 min_value = gdp_df['Year'].min()
 max_value = gdp_df['Year'].max()
 
+# min_value = df_tesouro['Data'].min()
+# max_value = df_tesouro['Data'].max()
+
 from_year, to_year = st.slider(
-    'Which years are you interested in?',
+    'Qual o período você tem interesse?',
     min_value=min_value,
     max_value=max_value,
     value=[min_value, max_value])
@@ -149,3 +183,4 @@ for i, country in enumerate(selected_countries):
             delta=growth,
             delta_color=delta_color
         )
+
