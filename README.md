@@ -1,18 +1,19 @@
-# :earth_americas: GDP dashboard template
+# :moneybag: Histórico de Preços do Tesouro
 
-A simple Streamlit app showing the GDP of different countries in the world.
+Consulte o histórico dos preços e taxas dos títulos públicos selecionando o nome do título e o período desejado.
+    Base atualizada até o dia 19/11/2024.
 
-[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://gdp-dashboard-template.streamlit.app/)
+[![Open in Streamlit](https://streamlit.app/)
 
-### How to run it on your own machine
+### Como rodar em sua máquina
 
-1. Install the requirements
+1. Instale as bibliotecas
 
    ```
    $ pip install -r requirements.txt
    ```
 
-2. Run the app
+2. Rode o app
 
    ```
    $ streamlit run streamlit_app.py
