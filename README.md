@@ -3,7 +3,7 @@
 Consulte o histórico dos preços e taxas dos títulos públicos selecionando o nome do título e o período desejado.
     Base atualizada até o dia 19/11/2024.
 
-[![Open in Streamlit](https://streamlit.app/)
+[Tesouro Direto - Dashboard](https://tesouro-precos-taxas-dashboard-7liqlpwbruv.streamlit.app/)
 
 ### Como rodar em sua máquina
 
